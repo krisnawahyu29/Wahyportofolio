@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Mail, Instagram, LineChart, Moon, Sun } from "lucide-react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 
-/** Komponen animasi fokus kata */
+/* =====================================================
+   Komponen TrueFocus – highlight kata dengan kotak biru
+   ===================================================== */
 function TrueFocus({
   sentence = "Admin Logistik Analis Accounting",
   blurAmount = 5,
@@ -16,10 +18,37 @@ function TrueFocus({
 }) {
   const words = sentence.split(" ");
   const [active, setActive] = useState(0);
+
   const wrapRef = useRef(null);
   const wordRefs = useRef([]);
   const [box, setBox] = useState({ x: 0, y: 0, w: 0, h: 0 });
 
+  /* ukur posisi/ukuran kata aktif dgn presisi */
+  const measure = () => {
+    const el = wordRefs.current[active];
+    const parent = wrapRef.current;
+    if (!el || !parent) return;
+
+    const r1 = parent.getBoundingClientRect();
+    const r2 = el.getBoundingClientRect();
+    const padX = 4; // padding 4 px
+    const padY = 2; // padding 2 px
+
+    setBox({
+      x: r2.left - r1.left - padX,
+      y: r2.top - r1.top - padY,
+      w: r2.width + padX * 2,
+      h: r2.height + padY * 2,
+    });
+  };
+
+  useLayoutEffect(measure, [active]);
+  useEffect(() => {
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  /* ganti kata tiap interval */
   useEffect(() => {
     const id = setInterval(
       () => setActive((i) => (i + 1) % words.length),
@@ -27,20 +56,6 @@ function TrueFocus({
     );
     return () => clearInterval(id);
   }, [animationDuration, pauseBetweenAnimations, words.length]);
-
-  useEffect(() => {
-    const el = wordRefs.current[active];
-    const parent = wrapRef.current;
-    if (!el || !parent) return;
-    const r1 = parent.getBoundingClientRect();
-    const r2 = el.getBoundingClientRect();
-    setBox({
-      x: r2.left - r1.left,
-      y: r2.top - r1.top,
-      w: r2.width,
-      h: r2.height,
-    });
-  }, [active]);
 
   return (
     <span ref={wrapRef} className="relative inline-block">
@@ -58,11 +73,13 @@ function TrueFocus({
         </span>
       ))}
 
+      {/* kotak highlight */}
       <motion.span
         className="absolute pointer-events-none rounded-md"
+        initial={false}
         animate={{
-          x: box.x,
-          y: box.y,
+          left: box.x,
+          top: box.y,
           width: box.w,
           height: box.h,
           opacity: 1,
@@ -77,6 +94,9 @@ function TrueFocus({
   );
 }
 
+/* ======================
+   Komponen utama (App)
+   ====================== */
 export default function App() {
   const [isDark, setIsDark] = useState(false);
 
@@ -87,9 +107,6 @@ export default function App() {
   const gradientBg = isDark
     ? "bg-gradient-to-br from-gray-900 via-black to-gray-800"
     : "bg-gradient-to-br from-blue-100 via-white to-blue-50";
-
-  const subTextColor = isDark ? "text-gray-300" : "text-gray-700";
-  const mainTextColor = isDark ? "text-gray-100" : "text-gray-800";
 
   const backgroundDecoration = isDark
     ? "bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900 via-gray-900 to-black"
@@ -149,6 +166,7 @@ export default function App() {
               className="w-full h-full object-cover object-center"
             />
           </div>
+
           <h1 className="text-4xl font-extrabold">Krisna Wahyu Mauludin</h1>
 
           {/* Animasi Fokus Kata */}
@@ -160,7 +178,7 @@ export default function App() {
           </div>
 
           <p className="text-sm italic max-w-xl mx-auto">
-            "Analytical thinker with a creative touch, passionate about financial data and decision‑making tools."
+            "Analytical thinker with a creative touch, passionate about financial data and decision-making tools."
           </p>
 
           <div className="flex justify-center gap-4 mt-4 flex-wrap">
@@ -188,7 +206,6 @@ export default function App() {
           </div>
         </motion.div>
       </section>
-
       {/* About */}
       <section id="about" className={clsx("snap-start min-h-screen flex items-center justify-center px-6 scroll-mt-20", gradientBg)}>
         <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="max-w-3xl text-center space-y-4">
