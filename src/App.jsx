@@ -5,185 +5,208 @@ import { Mail, Instagram, LineChart, Moon, Sun } from "lucide-react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 
-/\*\* Komponen animasi fokus kata \*/
+/* =====================================================
+   Komponen TrueFocus – highlight kata dengan kotak biru
+   ===================================================== */
 function TrueFocus({
-sentence = "Admin Logistik Analis Accounting",
-blurAmount = 5,
-borderColor = "cyan",
-glowColor = "rgba(0,255,255,.5)",
-animationDuration = 0.4,
-pauseBetweenAnimations = 1,
+  sentence = "Admin Logistik Analis Accounting",
+  blurAmount = 5,
+  borderColor = "cyan",
+  glowColor = "rgba(0,255,255,.5)",
+  animationDuration = 0.4,
+  pauseBetweenAnimations = 1,
 }) {
-const words = sentence.split(" ");
-const \[active, setActive] = useState(0);
-const wrapRef = useRef(null);
-const wordRefs = useRef(\[]);
-const \[box, setBox] = useState({ x: 0, y: 0, w: 0, h: 0 });
+  const words = sentence.split(" ");
+  const [active, setActive] = useState(0);
 
-useEffect(() => {
-const id = setInterval(
-() => setActive((i) => (i + 1) % words.length),
-(animationDuration + pauseBetweenAnimations) \* 1000
-);
-return () => clearInterval(id);
-}, \[animationDuration, pauseBetweenAnimations, words.length]);
+  const wrapRef = useRef(null);
+  const wordRefs = useRef([]);
+  const [box, setBox] = useState({ x: 0, y: 0, w: 0, h: 0 });
 
-useEffect(() => {
-const el = wordRefs.current\[active];
-const parent = wrapRef.current;
-if (!el || !parent) return;
-const r1 = parent.getBoundingClientRect();
-const r2 = el.getBoundingClientRect();
-setBox({
-x: r2.left - r1.left,
-y: r2.top - r1.top,
-w: r2.width,
-h: r2.height,
-});
-}, \[active]);
+  /* ukur posisi/ukuran kata aktif dgn presisi */
+  const measure = () => {
+    const el = wordRefs.current[active];
+    const parent = wrapRef.current;
+    if (!el || !parent) return;
 
-return ( <span ref={wrapRef} className="relative inline-block">
-{words.map((w, i) => (
-\<span
-key={i}
-ref={(el) => (wordRefs.current\[i] = el)}
-className="inline-block mx-1 font-semibold"
-style={{
-filter: i === active ? "blur(0)" : `blur(${blurAmount}px)`,
-transition: `filter ${animationDuration}s`,
-}}
-\>
-{w} </span>
-))}
+    const r1 = parent.getBoundingClientRect();
+    const r2 = el.getBoundingClientRect();
+    const padX = 4; // padding 4 px
+    const padY = 2; // padding 2 px
 
-```
-  <motion.span
-    className="absolute pointer-events-none rounded-md"
-    animate={{
-      x: box.x,
-      y: box.y,
-      width: box.w,
-      height: box.h,
-      opacity: 1,
-    }}
-    transition={{ duration: animationDuration }}
-    style={{
-      border: `2px solid ${borderColor}`,
-      boxShadow: `0 0 10px 2px ${glowColor}`,
-    }}
-  />
-</span>
-```
+    setBox({
+      x: r2.left - r1.left - padX,
+      y: r2.top - r1.top - padY,
+      w: r2.width + padX * 2,
+      h: r2.height + padY * 2,
+    });
+  };
 
-);
+  useLayoutEffect(measure, [active]);
+  useEffect(() => {
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  /* ganti kata tiap interval */
+  useEffect(() => {
+    const id = setInterval(
+      () => setActive((i) => (i + 1) % words.length),
+      (animationDuration + pauseBetweenAnimations) * 1000
+    );
+    return () => clearInterval(id);
+  }, [animationDuration, pauseBetweenAnimations, words.length]);
+
+  return (
+    <span ref={wrapRef} className="relative inline-block">
+      {words.map((w, i) => (
+        <span
+          key={i}
+          ref={(el) => (wordRefs.current[i] = el)}
+          className="inline-block mx-1 font-semibold"
+          style={{
+            filter: i === active ? "blur(0)" : `blur(${blurAmount}px)`,
+            transition: `filter ${animationDuration}s`,
+          }}
+        >
+          {w}
+        </span>
+      ))}
+
+      {/* kotak highlight */}
+      <motion.span
+        className="absolute pointer-events-none rounded-md"
+        initial={false}
+        animate={{
+          left: box.x,
+          top: box.y,
+          width: box.w,
+          height: box.h,
+          opacity: 1,
+        }}
+        transition={{ duration: animationDuration }}
+        style={{
+          border: `2px solid ${borderColor}`,
+          boxShadow: `0 0 10px 2px ${glowColor}`,
+        }}
+      />
+    </span>
+  );
 }
 
+/* ======================
+   Komponen utama (App)
+   ====================== */
 export default function App() {
-const \[isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(false);
 
-useEffect(() => {
-document.documentElement.classList.toggle("dark", isDark);
-}, \[isDark]);
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", isDark);
+  }, [isDark]);
 
-const gradientBg = isDark
-? "bg-gradient-to-br from-gray-900 via-black to-gray-800"
-: "bg-gradient-to-br from-blue-100 via-white to-blue-50";
+  const gradientBg = isDark
+    ? "bg-gradient-to-br from-gray-900 via-black to-gray-800"
+    : "bg-gradient-to-br from-blue-100 via-white to-blue-50";
 
-const subTextColor = isDark ? "text-gray-300" : "text-gray-700";
-const mainTextColor = isDark ? "text-gray-100" : "text-gray-800";
+  const backgroundDecoration = isDark
+    ? "bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900 via-gray-900 to-black"
+    : "bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-200 via-white to-pink-100";
 
-const backgroundDecoration = isDark
-? "bg-\[radial-gradient(ellipse\_at\_center,\_var(--tw-gradient-stops))] from-purple-900 via-gray-900 to-black"
-: "bg-\[radial-gradient(ellipse\_at\_top\_left,\_var(--tw-gradient-stops))] from-blue-200 via-white to-pink-100";
-
-return (
-\<main
-className={clsx(
-"scroll-smooth font-sans min-h-screen transition-colors duration-500 snap-y snap-mandatory overflow-y-scroll h-screen",
-backgroundDecoration,
-isDark ? "text-white" : "text-gray-800"
-)}
-\>
-{/\* Header \*/}
-\<header
-className={clsx(
-"fixed top-0 inset-x-0 z-50 backdrop-blur-md shadow-md p-4",
-isDark ? "bg-gray-800/90 text-white" : "bg-white/90 text-gray-700"
-)}
-\> <nav className="max-w-6xl mx-auto flex justify-between items-center font-semibold"> <div className="flex gap-6">
-{\["hero", "about", "skills", "projects", "contact"].map((id) => (
-\<a
-key={id}
-href={`#${id}`}
-className="hover\:text-blue-600 capitalize"
-\>
-{id} </a>
-))} </div>
-\<Button variant="ghost" size="icon" onClick={() => setIsDark((v) => !v)}>
-{isDark ? <Sun size={20} /> : <Moon size={20} />} </Button> </nav> </header>
-
-```
-  {/* Hero */}
-  <section
-    id="hero"
-    className={clsx(
-      "snap-start min-h-screen flex items-center justify-center px-6 pt-24 scroll-mt-20",
-      gradientBg
-    )}
-  >
-    <motion.div
-      initial={{ opacity: 0, y: 100 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 120 }}
-      className="text-center space-y-4"
+  return (
+    <main
+      className={clsx(
+        "scroll-smooth font-sans min-h-screen transition-colors duration-500 snap-y snap-mandatory overflow-y-scroll h-screen",
+        backgroundDecoration,
+        isDark ? "text-white" : "text-gray-800"
+      )}
     >
-      <div className="w-48 h-48 mx-auto rounded-full overflow-hidden shadow-lg border-4 border-white">
-        <img
-          src="https://previews.dropbox.com/p/thumb/ACr5efjGKl1dOmu1GTlaQwnMmpCgaVgq-E5S4T-1mTedwO2VM9MqhKy18_Sb5JsxcdSMwSULxc6PMBGy_BhZFAMii5_Tj3nfN2OVytNIufwzTpL58afpugKJY1v4YKKWzGDD1CteOy4NV76gMVG_C9iWfpEN1JlpqyEC-X3n9qhfBBMkCOOH4Jt9rI05ul3ko_bOP-c8ZDteKotdpxAb77JyhpISl6AtdiG1v0AmPEeqZPfTXD6l9FxGvfWzoMvZH5tN-Lpd1aC5UJ7BpozYfdG4_OE6gXcqUVruacTNOOLj-7ocrlEPppLxDIpxWOGy25q9U-626gghtXOM4yuBsnH0/p.jpeg?is_prewarmed=true"
-          alt="Krisna Wahyu Mauludin"
-          className="w-full h-full object-cover object-center"
-        />
-      </div>
-      <h1 className="text-4xl font-extrabold">Krisna Wahyu Mauludin</h1>
+      {/* Header */}
+      <header
+        className={clsx(
+          "fixed top-0 inset-x-0 z-50 backdrop-blur-md shadow-md p-4",
+          isDark ? "bg-gray-800/90 text-white" : "bg-white/90 text-gray-700"
+        )}
+      >
+        <nav className="max-w-6xl mx-auto flex justify-between items-center font-semibold">
+          <div className="flex gap-6">
+            {["hero", "about", "skills", "projects", "contact"].map((id) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                className="hover:text-blue-600 capitalize"
+              >
+                {id}
+              </a>
+            ))}
+          </div>
+          <Button variant="ghost" size="icon" onClick={() => setIsDark((v) => !v)}>
+            {isDark ? <Sun size={20} /> : <Moon size={20} />}
+          </Button>
+        </nav>
+      </header>
 
-      {/* Animasi Fokus Kata */}
-      <div className="text-lg">
-        <TrueFocus
-          borderColor={isDark ? "cyan" : "blue"}
-          glowColor={isDark ? "rgba(0,255,255,.5)" : "rgba(0,0,255,.3)"}
-        />
-      </div>
+      {/* Hero */}
+      <section
+        id="hero"
+        className={clsx(
+          "snap-start min-h-screen flex items-center justify-center px-6 pt-24 scroll-mt-20",
+          gradientBg
+        )}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 100 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 120 }}
+          className="text-center space-y-4"
+        >
+          <div className="w-48 h-48 mx-auto rounded-full overflow-hidden shadow-lg border-4 border-white">
+            <img
+              src="https://previews.dropbox.com/p/thumb/ACr5efjGKl1dOmu1GTlaQwnMmpCgaVgq-E5S4T-1mTedwO2VM9MqhKy18_Sb5JsxcdSMwSULxc6PMBGy_BhZFAMii5_Tj3nfN2OVytNIufwzTpL58afpugKJY1v4YKKWzGDD1CteOy4NV76gMVG_C9iWfpEN1JlpqyEC-X3n9qhfBBMkCOOH4Jt9rI05ul3ko_bOP-c8ZDteKotdpxAb77JyhpISl6AtdiG1v0AmPEeqZPfTXD6l9FxGvfWzoMvZH5tN-Lpd1aC5UJ7BpozYfdG4_OE6gXcqUVruacTNOOLj-7ocrlEPppLxDIpxWOGy25q9U-626gghtXOM4yuBsnH0/p.jpeg?is_prewarmed=true"
+              alt="Krisna Wahyu Mauludin"
+              className="w-full h-full object-cover object-center"
+            />
+          </div>
 
-      <p className="text-sm italic max-w-xl mx-auto">
-        "Analytical thinker with a creative touch, passionate about financial data and decision‑making tools."
-      </p>
+          <h1 className="text-4xl font-extrabold">Krisna Wahyu Mauludin</h1>
 
-      <div className="flex justify-center gap-4 mt-4 flex-wrap">
-        {[
-          [LineChart, "https://www.tradingview.com/u/Kyy_fx/", "TradingView"],
-          [Mail, "mailto:Kress2735@gmail.com", "Email"],
-          [Instagram, "https://www.instagram.com/wahy_fx/", "Instagram"],
-          ["🌟", "https://www.tiktok.com/@kriss_scalp?is_from_webapp=1&sender_device=pc", "TikTok"],
-        ].map(([Icon, href, label]) => (
-          <a
-            key={label}
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="no-underline"
-          >
-            <Button
-              variant="outline"
-              className="gap-2 text-gray-800 border-gray-300 dark:text-gray-800 dark:border-gray-300"
-            >
-              {typeof Icon === "string" ? Icon : <Icon size={18} />} {label}
-            </Button>
-          </a>
-        ))}
-      </div>
-    </motion.div>
-  </section>
-```
+          {/* Animasi Fokus Kata */}
+          <div className="text-lg">
+            <TrueFocus
+              borderColor={isDark ? "cyan" : "blue"}
+              glowColor={isDark ? "rgba(0,255,255,.5)" : "rgba(0,0,255,.3)"}
+            />
+          </div>
+
+          <p className="text-sm italic max-w-xl mx-auto">
+            "Analytical thinker with a creative touch, passionate about financial data and decision-making tools."
+          </p>
+
+          <div className="flex justify-center gap-4 mt-4 flex-wrap">
+            {[
+              [LineChart, "https://www.tradingview.com/u/Kyy_fx/", "TradingView"],
+              [Mail, "mailto:Kress2735@gmail.com", "Email"],
+              [Instagram, "https://www.instagram.com/wahy_fx/", "Instagram"],
+              ["🌟", "https://www.tiktok.com/@kriss_scalp?is_from_webapp=1&sender_device=pc", "TikTok"],
+            ].map(([Icon, href, label]) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="no-underline"
+              >
+                <Button
+                  variant="outline"
+                  className="gap-2 text-gray-800 border-gray-300 dark:text-gray-800 dark:border-gray-300"
+                >
+                  {typeof Icon === "string" ? Icon : <Icon size={18} />} {label}
+                </Button>
+              </a>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+
       {/* About */}
       <section id="about" className={clsx("snap-start min-h-screen flex items-center justify-center px-6 scroll-mt-20", gradientBg)}>
         <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="max-w-3xl text-center space-y-4">
