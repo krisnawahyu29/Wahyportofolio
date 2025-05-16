@@ -137,8 +137,8 @@ export default function App() {
         )}
       >
         <motion.div
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
+          initial={{ opacity: 0, y: 100 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 120 }}
           className="text-center space-y-4"
         >
